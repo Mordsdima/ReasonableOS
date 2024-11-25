@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+
+    <IlcSystemModule>ReasonableOS</IlcSystemModule>
+    <IlcVerboseLogging>true</IlcVerboseLogging>
+
+    <PublishAot>true</PublishAot>
+    <!-- Version 11 require System.AttributeUsageAttribute which is additional code -->
+    <LangVersion>10</LangVersion>
+    <NativeLib>Static</NativeLib>
+    <OutputType>Library</OutputType> <!-- We'll anyway need some asm code likely -->
+  </PropertyGroup>
+
+  <Target Name="CustomizeReferences" BeforeTargets="BeforeCompile" AfterTargets="FindReferenceAssembliesForReferences">
+    <ItemGroup>
+      <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)" />
+      <ReferencePath Remove="@(ReferencePath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RemoveHostConfigurationOptions" BeforeTargets="WriteIlcRspFileForCompilation" DependsOnTargets="PrepareForILLink">
+    <ItemGroup>
+      <RuntimeHostConfigurationOption Remove="@(RuntimeHostConfigurationOption)" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="8.0.11" />
+    <IlcArg Include="--noinlinetls" />
+  </ItemGroup>
+
+  <Target Name="LinkTarget"
+    AfterTargets="Publish">
+    <Exec Command="ld.lld -T src/linker.ld -m elf_x86_64 -nostdlib -static -z max-page-size=0x1000 $(MSBuildProjectDirectory)/bin/Release/net8.0/$(RuntimeIdentifier)/native/ReasonableOS.a -o $(MSBuildProjectDirectory)/bin/Release/net8.0/$(RuntimeIdentifier)/ReasonableOS.elf" />
+    <Message Text="Built $(MSBuildProjectDirectory)/bin/Release/net8.0/$(RuntimeIdentifier)/ReasonableOS.elf" />
+  </Target>
+
+
+</Project>
